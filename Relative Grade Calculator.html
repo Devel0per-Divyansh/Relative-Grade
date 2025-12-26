@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relative Grade Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@latest/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --color-primary: #2180aa;
+            --color-primary-hover: #1a6a8f;
+            --color-success: #22b8a6;
+            --color-error: #c01437;
+            --color-bg: #f5f5f2;
+            --color-surface: #ffffff;
+            --color-text: #134252;
+            --color-text-secondary: #626c70;
+            --color-border: #d1d5d6;
+            --color-secondary-bg: #f9f9f7;
+            --color-table-header-bg: #f0f0f0;
+            --color-table-hover-bg: #fafaf8;
+            --color-button-secondary: #e8e8e6;
+            --color-button-secondary-hover: #d8d8d6;
+            --color-info-bg: #fff9e6;
+            --color-info-border: #fce8b2;
+            --radius: 8px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        :root[data-theme="dark"] {
+            --color-primary: #48d1cc;
+            --color-primary-hover: #3bb8b4;
+            --color-success: #9ae6b4;
+            --color-error: #fc8181;
+            --color-bg: #0f1419;
+            --color-surface: #1a202c;
+            --color-text: #e2e8f0;
+            --color-text-secondary: #a0aec0;
+            --color-border: #2d3748;
+            --color-secondary-bg: #2d3748;
+            --color-table-header-bg: #2d3748;
+            --color-table-hover-bg: #374151;
+            --color-button-secondary: #2d3748;
+            --color-button-secondary-hover: #374151;
+            --color-info-bg: #2d3748;
+            --color-info-border: #404040;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--color-surface);
+            border: 2px solid var(--color-border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: 0 0 0 3px rgba(33, 128, 141, 0.2);
+            transform: scale(1.1);
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 16px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--color-surface);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 20px;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        input[type="file"] {
+            padding: 8px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(33, 128, 141, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 11px 16px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--color-primary-hover);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--color-button-secondary);
+            color: var(--color-text);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-button-secondary-hover);
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.error {
+            background: rgba(192, 20, 55, 0.1);
+            color: var(--color-error);
+            border: 1px solid rgba(192, 20, 55, 0.2);
+        }
+
+        .alert.success {
+            background: rgba(34, 184, 166, 0.1);
+            color: var(--color-success);
+            border: 1px solid rgba(34, 184, 166, 0.2);
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 13px;
+        }
+
+        .results-table th {
+            background: var(--color-table-header-bg);
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .results-table tbody tr:hover {
+            background: var(--color-table-hover-bg);
+        }
+
+        .grade-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            text-align: center;
+            min-width: 30px;
+        }
+
+        .grade-s { background: rgba(34, 184, 166, 0.2); color: #07be9f; }
+        .grade-a { background: rgba(33, 184, 198, 0.15); color: #11a6bd; }
+        .grade-b { background: rgba(59, 130, 246, 0.15); color: #1940c1; }
+        .grade-c { background: rgba(245, 158, 11, 0.15); color: #bd5718; }
+        .grade-d { background: rgba(168, 75, 47, 0.15); color: #ad3d18; }
+        .grade-e { background: rgba(107, 114, 128, 0.15); color: #6f8dbd; }
+        .grade-u { background: rgba(192, 20, 55, 0.15); color: #cc3030; }
+
+        .grade-distribution {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--color-secondary-bg);
+            border-radius: 6px;
+        }
+
+        .distribution-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 13px;
+        }
+
+        .distribution-row:last-child {
+            border-bottom: none;
+        }
+
+        .dist-count {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .percentile-info {
+            background: var(--color-secondary-bg);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" id="themeToggle">☀️</button>
+            <h1>📊 Relative Grade Calculator</h1>
+            <p class="subtitle">Calculate grades based on class performance percentiles</p>
+        </header>
+
+        <div class="layout">
+            <!-- Configuration Panel -->
+            <div class="card">
+                <h2>Configuration</h2>
+                
+                <div class="alert" id="configAlert"></div>
+
+                <div class="form-group">
+                    <label>Upload Excel File *</label>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+                    <p class="hint-text">Contains a column with student marks (0-100)</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Marks Column *</label>
+                    <select id="columnSelect">
+                        <option value="">-- Choose column --</option>
+                    </select>
+                    <p class="hint-text">Column containing total marks</p>
+                </div>
+
+                <div class="form-group">
+                    <label>S Grade Percentile *</label>
+                    <div class="two-col">
+                        <div>
+                            <input type="number" id="sGradePercent" min="1" max="50" value="5" />
+                            <p class="hint-text">Top % for S grade</p>
+                        </div>
+                        <div>
+                            <input type="number" id="sGradeMin" min="0" max="100" value="85" readonly />
+                            <p class="hint-text">Calculated minimum</p>
+                        </div>
+                    </div>
+                    <div class="percentile-info">
+                        <strong>How it works:</strong> Specifies the top percentile (e.g., top 5%) who receive S grade. Enter percentile value (1-50).
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Fail Threshold (Below this = U grade) *</label>
+                    <input type="number" id="failThreshold" min="0" max="100" value="40" />
+                    <p class="hint-text">Marks below this get U grade</p>
+                </div>
+
+                <div class="button-group full-width">
+                    <button onclick="calculateGrades()" class="full-width">Calculate Grades</button>
+                    <button onclick="resetForm()" class="btn-secondary full-width">Reset</button>
+                </div>
+            </div>
+
+            <!-- Grade Reference Panel -->
+            <div class="card">
+                <h2>Grade Scale Reference</h2>
+                
+                <div style="margin-top: 16px;">
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-s">S</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Top percentile (Excellent)</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-a">A</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Group 1 below S (Very Good)</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-b">B</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Group 2 below S (Good)</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-c">C</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Group 3 below S (Average)</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-d">D</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Group 4 below S (Below Avg)</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-e">E</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Group 5 below S (Pass)</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <span class="grade-badge grade-u">U</span>
+                        <span style="margin-left: 12px; font-size: 14px;">Below threshold (Fail)</span>
+                    </div>
+                </div>
+
+                <div class="percentile-info" id="algorithmBox" style="margin-top: 20px;">
+                    <strong>Algorithm:</strong> Student marks are ranked by percentile. Top percentile gets S. Remaining marks (below S to fail threshold) are divided equally into 5 groups (A→E). Below threshold = U.
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="card">
+            <h2>Results</h2>
+            <div class="alert" id="resultAlert"></div>
+            <div id="resultsContainer" class="no-data">Upload an Excel file and configure settings to see results</div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedData = null;
+        let allMarks = [];
+
+        // Initialize theme on page load
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeToggle(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeToggle(newTheme);
+        }
+
+        function updateThemeToggle(theme) {
+            const toggle = document.getElementById('themeToggle');
+            toggle.textContent = theme === 'light' ? '🌙' : '☀️';
+        }
+
+        // Initialize theme when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            updateAlgorithmBoxStyle();
+        });
+
+        function updateAlgorithmBoxStyle() {
+            const algorithmBox = document.getElementById('algorithmBox');
+            if (algorithmBox) {
+                const theme = document.documentElement.getAttribute('data-theme');
+                if (theme === 'dark') {
+                    algorithmBox.style.background = 'var(--color-info-bg)';
+                    algorithmBox.style.borderColor = 'var(--color-info-border)';
+                    algorithmBox.style.border = '1px solid var(--color-info-border)';
+                } else {
+                    algorithmBox.style.background = 'var(--color-info-bg)';
+                    algorithmBox.style.border = '1px solid var(--color-info-border)';
+                }
+            }
+        }
+
+        const originalToggleTheme = toggleTheme;
+        toggleTheme = function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeToggle(newTheme);
+            updateAlgorithmBoxStyle();
+        };
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('columnSelect').addEventListener('change', updateSGradeCalculation);
+        document.getElementById('sGradePercent').addEventListener('input', updateSGradeCalculation);
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Check if XLSX library is loaded
+            if (typeof XLSX === 'undefined') {
+                showAlert('configAlert', 'error', 'XLSX library not loaded. Please wait a moment and try again.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = event.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    
+                    const jsonData = XLSX.utils.sheet_to_json(sheet);
+                    if (jsonData.length === 0) {
+                        showAlert('configAlert', 'error', 'Uploaded file is empty');
+                        return;
+                    }
+
+                    uploadedData = jsonData;
+                    populateColumnSelect(Object.keys(jsonData[0]));
+                    showAlert('configAlert', 'success', `Loaded ${jsonData.length} rows from ${sheetName}`);
+                } catch (error) {
+                    showAlert('configAlert', 'error', 'Error reading file: ' + error.message);
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function populateColumnSelect(columns) {
+            const select = document.getElementById('columnSelect');
+            select.innerHTML = '<option value="">-- Choose column --</option>';
+            columns.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col;
+                option.textContent = col;
+                select.appendChild(option);
+            });
+        }
+
+        function updateSGradeCalculation() {
+            if (!uploadedData || !document.getElementById('columnSelect').value) return;
+
+            const columnName = document.getElementById('columnSelect').value;
+            const sPercent = parseFloat(document.getElementById('sGradePercent').value) || 5;
+            const failThreshold = parseFloat(document.getElementById('failThreshold').value);
+
+            // Extract marks
+            allMarks = uploadedData
+                .map(row => parseFloat(row[columnName]))
+                .filter(mark => !isNaN(mark) && mark >= 0 && mark <= 100)
+                .sort((a, b) => b - a);
+
+            if (allMarks.length === 0) {
+                showAlert('configAlert', 'error', 'No valid marks found in selected column');
+                return;
+            }
+
+            // Calculate S grade threshold
+            const sCount = Math.max(1, Math.ceil(allMarks.length * sPercent / 100));
+            const sGradeMin = allMarks[sCount - 1];
+
+            // Validation: Check if S grade threshold is less than fail threshold
+            if (sGradeMin < failThreshold) {
+                showAlert('configAlert', 'error', `Invalid configuration: S grade threshold (${sGradeMin.toFixed(2)}) cannot be less than fail threshold (${failThreshold}). Adjust percentile or fail threshold.`);
+                document.getElementById('sGradeMin').value = '';
+                return;
+            }
+
+            document.getElementById('sGradeMin').value = sGradeMin.toFixed(2);
+        }
+
+        function calculateGrades() {
+            const columnName = document.getElementById('columnSelect').value;
+            const sGradeMin = parseFloat(document.getElementById('sGradeMin').value);
+            const failThreshold = parseFloat(document.getElementById('failThreshold').value);
+
+            if (!uploadedData || !columnName) {
+                showAlert('resultAlert', 'error', 'Please upload file and select column');
+                return;
+            }
+
+            if (isNaN(sGradeMin) || isNaN(failThreshold)) {
+                showAlert('resultAlert', 'error', 'Invalid grade thresholds');
+                return;
+            }
+
+            // Extract all marks
+            const results = uploadedData
+                .map((row, idx) => {
+                    const mark = parseFloat(row[columnName]);
+                    return { ...row, mark, index: idx };
+                })
+                .filter(item => !isNaN(item.mark) && item.mark >= 0 && item.mark <= 100);
+
+            if (results.length === 0) {
+                showAlert('resultAlert', 'error', 'No valid marks found');
+                return;
+            }
+
+            // Assign grades
+            const graded = results.map(item => {
+                const mark = item.mark;
+                let grade;
+
+                if (mark >= sGradeMin) {
+                    grade = 'S';
+                } else if (mark < failThreshold) {
+                    grade = 'U';
+                } else {
+                    // Divide remaining marks into 5 equal groups
+                    const rangeBelowS = sGradeMin - failThreshold;
+                    const groupSize = rangeBelowS / 5;
+
+                    if (mark >= sGradeMin - groupSize) {
+                        grade = 'A';
+                    } else if (mark >= sGradeMin - 2 * groupSize) {
+                        grade = 'B';
+                    } else if (mark >= sGradeMin - 3 * groupSize) {
+                        grade = 'C';
+                    } else if (mark >= sGradeMin - 4 * groupSize) {
+                        grade = 'D';
+                    } else {
+                        grade = 'E';
+                    }
+                }
+
+                return { ...item, grade };
+            });
+
+            displayResults(graded, sGradeMin, failThreshold);
+        }
+
+        function displayResults(graded, sGradeMin, failThreshold) {
+            const container = document.getElementById('resultsContainer');
+            
+            // Grade distribution
+            const distribution = {};
+            ['S', 'A', 'B', 'C', 'D', 'E', 'U'].forEach(g => distribution[g] = 0);
+            graded.forEach(item => distribution[item.grade]++);
+
+            let html = '<div class="grade-distribution"><strong>Grade Distribution:</strong>';
+            Object.entries(distribution).forEach(([grade, count]) => {
+                const percent = ((count / graded.length) * 100).toFixed(1);
+                html += `<div class="distribution-row"><span>${grade} Grade</span><span class="dist-count">${count} (${percent}%)</span></div>`;
+            });
+            html += '</div>';
+
+            // Create line chart
+            html += createLineChart(distribution, graded.length);
+
+            // Results table
+            html += '<table class="results-table"><thead><tr><th>Student ID/Index</th><th>Marks</th><th>Grade</th></tr></thead><tbody>';
+            
+            graded.forEach((item, idx) => {
+                const gradeBadge = `grade-${item.grade.toLowerCase()}`;
+                html += `<tr>
+                    <td>#${item.index + 1}</td>
+                    <td>${item.mark.toFixed(2)}</td>
+                    <td><span class="grade-badge ${gradeBadge}">${item.grade}</span></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+
+            // Summary with individual grade thresholds
+            const rangeBelowS = sGradeMin - failThreshold;
+            const groupSize = rangeBelowS / 5;
+            const aThreshold = sGradeMin - groupSize;
+            const bThreshold = sGradeMin - (2 * groupSize);
+            const cThreshold = sGradeMin - (3 * groupSize);
+            const dThreshold = sGradeMin - (4 * groupSize);
+            
+            html += `<div style="margin-top: 20px; padding: 16px; background: var(--color-secondary-bg); border-radius: 6px; font-size: 13px;">
+                <strong>Summary:</strong><br/>
+                Total Students: ${graded.length}<br/>
+                S Grade Threshold: ≥ ${sGradeMin.toFixed(2)} marks<br/>
+                A Grade Threshold: ≥ ${aThreshold.toFixed(2)} marks<br/>
+                B Grade Threshold: ≥ ${bThreshold.toFixed(2)} marks<br/>
+                C Grade Threshold: ≥ ${cThreshold.toFixed(2)} marks<br/>
+                D Grade Threshold: ≥ ${dThreshold.toFixed(2)} marks<br/>
+                E Grade Threshold: ≥ ${failThreshold.toFixed(2)} marks<br/>
+                U Grade Threshold: &lt; ${failThreshold.toFixed(2)} marks
+            </div>`;
+
+            // Download button
+            html += `<div style="margin-top: 20px;">
+                <button onclick="downloadGradedExcel()" style="width: 100%; padding: 12px 16px; background: #22b8a6; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; font-size: 14px;">⬇️ Download Results as Excel</button>
+            </div>`;
+
+            container.innerHTML = html;
+            showAlert('resultAlert', 'success', 'Grades calculated successfully');
+            
+            // Store graded data for download
+            window.gradedDataForDownload = graded;
+        }
+
+        function downloadGradedExcel() {
+            if (!window.gradedDataForDownload || window.gradedDataForDownload.length === 0) {
+                showAlert('resultAlert', 'error', 'No data to download');
+                return;
+            }
+
+            const graded = window.gradedDataForDownload;
+            const columnName = document.getElementById('columnSelect').value;
+
+            // Create workbook with original data + single Grade column
+            const wsData = graded.map(item => {
+                const row = { ...item };
+
+                // Ensure the exported sheet uses the original selected column name
+                // for marks (so we don't add a separate 'mark' column).
+                const colName = columnName || 'Marks';
+                if (typeof item.mark === 'number') {
+                    row[colName] = item.mark.toFixed(2);
+                } else if (item.mark !== undefined) {
+                    row[colName] = item.mark;
+                }
+
+                // Add Grade column (uppercase) and remove helper props
+                row.Grade = item.grade;
+                delete row.mark;
+                delete row.index;
+                delete row.grade;
+                return row;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Graded Results');
+
+            // Style the header row (optional, basic styling)
+            const wscols = [];
+            Object.keys(wsData[0]).forEach(() => {
+                wscols.push({ wch: 15 });
+            });
+            ws['!cols'] = wscols;
+
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `graded-results-${timestamp}.xlsx`;
+
+            // Download
+            XLSX.writeFile(wb, filename);
+            showAlert('resultAlert', 'success', 'Excel file downloaded successfully!');
+        }
+
+        function createLineChart(distribution, total) {
+            const grades = ['S', 'A', 'B', 'C', 'D', 'E', 'U'];
+            const counts = grades.map(g => distribution[g]);
+            const maxCount = Math.max(...counts);
+            
+            // SVG dimensions
+            const width = 600;
+            const height = 300;
+            const padding = 60;
+            const chartWidth = width - 2 * padding;
+            const chartHeight = height - 2 * padding;
+            
+            // Calculate points
+            const points = [];
+            grades.forEach((grade, idx) => {
+                const x = padding + (idx / (grades.length - 1)) * chartWidth;
+                const y = height - padding - (counts[idx] / maxCount) * chartHeight;
+                points.push({ x, y, count: counts[idx], grade });
+            });
+            
+            // Create SVG path for line
+            let pathData = `M ${points[0].x} ${points[0].y}`;
+            for (let i = 1; i < points.length; i++) {
+                const p1 = points[i - 1];
+                const p2 = points[i];
+                const cp1x = p1.x + (p2.x - p1.x) / 3;
+                const cp1y = p1.y;
+                const cp2x = p2.x - (p2.x - p1.x) / 3;
+                const cp2y = p2.y;
+                pathData += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+            }
+            
+            let html = '<div style="margin-top: 30px;">';
+            html += '<h3 style="margin: 0 0 20px 0; font-size: 16px;">Grade Distribution Line Chart</h3>';
+            html += `<svg width="${width}" height="${height}" style="border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface);">`;
+            
+            // Grid lines
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (i / 5) * chartHeight;
+                html += `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="5,5" opacity="0.5"/>`;
+                html += `<text x="${padding - 10}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--color-text-secondary)">${Math.round(maxCount * (5 - i) / 5)}</text>`;
+            }
+            
+            // Axes
+            html += `<line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" stroke="var(--color-text)" stroke-width="2"/>`;
+            html += `<line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="var(--color-text)" stroke-width="2"/>`;
+            
+            // X-axis labels
+            grades.forEach((grade, idx) => {
+                const x = padding + (idx / (grades.length - 1)) * chartWidth;
+                html += `<text x="${x}" y="${height - padding + 25}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-text)">${grade}</text>`;
+            });
+            
+            // Y-axis label
+            html += `<text x="15" y="${height / 2}" text-anchor="middle" font-size="12" fill="var(--color-text-secondary)" transform="rotate(-90 15 ${height / 2})">Students</text>`;
+            
+            // Line path
+            html += `<path d="${pathData}" stroke="var(--color-primary)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+            
+            // Data points with circles
+            points.forEach(p => {
+                html += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--color-primary)" stroke="var(--color-surface)" stroke-width="2"/>`;
+                html += `<text x="${p.x}" y="${p.y - 12}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-primary)">${p.count}</text>`;
+            });
+            
+            html += '</svg>';
+            html += '</div>';
+            return html;
+        }
+
+        function showAlert(elementId, type, message) {
+            const alert = document.getElementById(elementId);
+            alert.className = `alert ${type} show`;
+            alert.textContent = message;
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        function resetForm() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('columnSelect').innerHTML = '<option value="">-- Choose column --</option>';
+            document.getElementById('sGradePercent').value = '5';
+            document.getElementById('sGradeMin').value = '';
+            document.getElementById('failThreshold').value = '40';
+            document.getElementById('resultsContainer').innerHTML = '<div class="no-data">Upload an Excel file and configure settings to see results</div>';
+            document.getElementById('configAlert').classList.remove('show');
+            document.getElementById('resultAlert').classList.remove('show');
+            uploadedData = null;
+            allMarks = [];
+            window.gradedDataForDownload = null;
+        }
+    </script>
+</body>
+</html>
